@@ -76,6 +76,7 @@ words_of_certain_length([Word|WordList], Length, [Word|MatchingWords]) :-
 words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
+
 unique_length_word(WordList, Length) :-
     words_of_certain_length(WordList, Length, MatchingWords),
     length(MatchingWords, Length).
