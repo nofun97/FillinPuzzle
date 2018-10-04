@@ -77,20 +77,25 @@ words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
 
-find_row([Row|_], 0, Row).
-find_row([_|Puzzle], RowNumber, Row) :-
+fill_puzzle(X, -1, _, _, X).
+fill_puzzle([RowToReplace|Puzzle], 0, ColumnNumber, Word, [Replaced|Puzzle]) :-
+    ColumnNumber >= 0,
+    replace_row(RowToReplace, Word, ColumnNumber, Replaced),
+    fill_puzzle(Puzzle, -1, ColumnNumber, Word, Puzzle).
+fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
     RowNumber >= 0,
+    ColumnNumber >= 0,
     Index is RowNumber-1,
-    find_row(Puzzle, Index, Row).     
+    fill_puzzle(Puzzle, Index, ColumnNumber, Word, FilledPuzzle).  
 
-fill_puzzle(X,[],0,X).
-fill_puzzle([H|Row], [W|Word], 0, [W|FilledRow]) :-
+replace_row(X,[],0,X).
+replace_row([H|Row], [W|Word], 0, [W|FilledRow]) :-
     H=='_',
-    fill_puzzle(Row, Word, 0, FilledRow).
-fill_puzzle([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
+    replace_row(Row, Word, 0, FilledRow).
+replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
     ColumnNumber >= 0,
     Index is ColumnNumber-1,
-    fill_puzzle(Row, Word, Index, FilledRow).
+    replace_row(Row, Word, Index, FilledRow).
 
 
 % unique_length_word(WordList, Length, Word) :-
