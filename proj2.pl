@@ -67,8 +67,11 @@ valid_puzzle([Row|Rows]) :-
 % This code is obviously wrong: it just gives back the unfilled puzzle
 % as result.  You'll need to replace this with a working
 % implementation.
+solve_puzzle(_,_,FilledPuzzle) :- 
 solve_puzzle(Puzzle, _, Puzzle).
 
+% To find words of certain length
+% Predicate should terminate when there is no more words to process
 words_of_certain_length([], _, []).
 words_of_certain_length([Word|WordList], Length, [Word|MatchingWords]) :-
     length(Word, Length),
@@ -76,12 +79,11 @@ words_of_certain_length([Word|WordList], Length, [Word|MatchingWords]) :-
 words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
-
-fill_puzzle(X, -1, _, _, X).
+% fill_puzzle takes in the empty puzzle, Row and Column number, the word to 
+% fill and output the filled puzzle
 fill_puzzle([RowToReplace|Puzzle], 0, ColumnNumber, Word, [Replaced|Puzzle]) :-
     ColumnNumber >= 0,
-    replace_row(RowToReplace, Word, ColumnNumber, Replaced),
-    fill_puzzle(Puzzle, -1, ColumnNumber, Word, Puzzle).
+    replace_row(RowToReplace, Word, ColumnNumber, Replaced).
 fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
     RowNumber >= 0,
     ColumnNumber >= 0,
@@ -90,12 +92,22 @@ fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
 
 replace_row(X,[],0,X).
 replace_row([H|Row], [W|Word], 0, [W|FilledRow]) :-
-    H=='_',
+    (H=='_' ; H==W),
     replace_row(Row, Word, 0, FilledRow).
 replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
     ColumnNumber >= 0,
     Index is ColumnNumber-1,
     replace_row(Row, Word, Index, FilledRow).
+
+row_is_filled([]).
+row_is_filled([H|Row]) :-
+    H \= "_",
+    row_is_filled(Row).
+
+puzzle_is_filled([]).
+puzzle_is_filled([Row|Puzzle]) :-
+    row_is_filled(Row),
+    puzzle_is_filled(Puzzle).
 
 
 % unique_length_word(WordList, Length, Word) :-
