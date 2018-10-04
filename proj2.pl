@@ -77,6 +77,24 @@ words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
 
-unique_length_word(WordList, Length) :-
-    words_of_certain_length(WordList, Length, MatchingWords),
-    length(MatchingWords, Length).
+find_row([Row|_], 0, Row).
+find_row([_|Puzzle], RowNumber, Row) :-
+    RowNumber >= 0,
+    Index is RowNumber-1,
+    find_row(Puzzle, Index, Row).     
+
+fill_puzzle(X,[],0,X).
+fill_puzzle([H|Row], [W|Word], 0, [W|FilledRow]) :-
+    H=='_',
+    fill_puzzle(Row, Word, 0, FilledRow).
+fill_puzzle([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
+    ColumnNumber >= 0,
+    Index is ColumnNumber-1,
+    fill_puzzle(Row, Word, Index, FilledRow).
+
+
+% unique_length_word(WordList, Length, Word) :-
+%     words_of_certain_length(WordList, Length, [Word]),
+%     length(Word, Length).
+% unique_length_word(WordList, Length, Word) :-
+%     unique_length_word(WordList, Length+1, Word).
