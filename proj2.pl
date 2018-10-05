@@ -67,7 +67,7 @@ valid_puzzle([Row|Rows]) :-
 % This code is obviously wrong: it just gives back the unfilled puzzle
 % as result.  You'll need to replace this with a working
 % implementation.
-solve_puzzle(_,_,FilledPuzzle) :- 
+% solve_puzzle(_,_,FilledPuzzle) :- 
 solve_puzzle(Puzzle, _, Puzzle).
 
 % To find words of certain length
@@ -82,26 +82,39 @@ words_of_certain_length([_|WordList], Length, MatchingWords) :-
 % fill_puzzle takes in the empty puzzle, Row and Column number, the word to 
 % fill and output the filled puzzle
 fill_puzzle([RowToReplace|Puzzle], 0, ColumnNumber, Word, [Replaced|Puzzle]) :-
-    ColumnNumber >= 0,
+    ColumnNumber>=0,
     replace_row(RowToReplace, Word, ColumnNumber, Replaced).
 fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
-    RowNumber >= 0,
-    ColumnNumber >= 0,
+    RowNumber>=0,
+    ColumnNumber>=0,
     Index is RowNumber-1,
     fill_puzzle(Puzzle, Index, ColumnNumber, Word, FilledPuzzle).  
 
-replace_row(X,[],0,X).
+
+replace_row([], [], 0, []).
+replace_row([H|Row], [], 0, [H|Row]) :-
+    H== # .
 replace_row([H|Row], [W|Word], 0, [W|FilledRow]) :-
-    (H=='_' ; H==W),
+    (   H=='_'
+    ;   H==W
+    ),
     replace_row(Row, Word, 0, FilledRow).
 replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
-    ColumnNumber >= 0,
+    ColumnNumber>=0,
     Index is ColumnNumber-1,
     replace_row(Row, Word, Index, FilledRow).
 
+
+puzzle_is_correct(FilledPuzzle, WordList) :-
+    puzzle_is_filled(FilledPuzzle),
+    words_not_in_puzzle(FilledPuzzle, WordList, RemainingWords),
+    transpose(FilledPuzzle, TransposedPuzzle),
+    words_not_in_puzzle(TransposedPuzzle, RemainingWords, ProcessedRemainingWords),
+    ProcessedRemainingWords==[].
+
 row_is_filled([]).
 row_is_filled([H|Row]) :-
-    H \= "_",
+    H\='_',
     row_is_filled(Row).
 
 puzzle_is_filled([]).
@@ -109,7 +122,29 @@ puzzle_is_filled([Row|Puzzle]) :-
     row_is_filled(Row),
     puzzle_is_filled(Puzzle).
 
+words_not_in_puzzle(FilledPuzzle, WordList, RemainingWords) :-
+    words_in_puzzle(FilledPuzzle, WordsInPuzzle),
+    subset(WordsInPuzzle, WordList),
+    delete(WordList, WordsInPuzzle, RemainingWords).
 
+words_in_puzzle([], []).
+words_in_puzzle([Row|FilledPuzzle], SortedAllWords) :-
+    words_in_row(Row, WordsInRow),
+    words_in_puzzle(FilledPuzzle, WordsInPuzzle),
+    append(WordsInRow, WordsInPuzzle, AllWords),
+    sort(AllWords, SortedAllWords).
+
+words_in_row(Row, WordsInRow) :-
+    process_words_in_row(Row, [], Words),
+    delete(Words, [], WordsInRow).
+
+process_words_in_row([], CompleteWord, [CompleteWord]).
+process_words_in_row([#|Row], CompleteWord, [CompleteWord|WordList]) :-
+    process_words_in_row(Row, [], WordList).
+process_words_in_row([H|Row], Word, WordList) :-
+    append(Word, [H], AppendedWord),
+    process_words_in_row(Row, AppendedWord, WordList).
+    
 % unique_length_word(WordList, Length, Word) :-
 %     words_of_certain_length(WordList, Length, [Word]),
 %     length(Word, Length).
