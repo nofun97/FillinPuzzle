@@ -93,7 +93,7 @@ fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
 
 replace_row([], [], 0, []).
 replace_row([H|Row], [], 0, [H|Row]) :-
-    H== # .
+    H=='#'.
 replace_row([H|Row], [W|Word], 0, [W|FilledRow]) :-
     (   H=='_'
     ;   H==W
