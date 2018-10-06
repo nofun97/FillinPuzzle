@@ -70,12 +70,36 @@ valid_puzzle([Row|Rows]) :-
 % solve_puzzle(_,_,FilledPuzzle) :- 
 solve_puzzle(Puzzle, _, Puzzle).
 
+process_puzzle([], _, _, []).
+% process_puzzle([EmptyRow|EmptyPuzzle], [Word|WordList], [Word|UsedWords], [FilledRow|FilledPuzzle]) :-
+
+
+fill_row([Data|RowData], RowToFill, [Word|WordList], FilledRow) :-
+    replace()
+
+% analyze_row takes in an empty row and initially an empty list and number 0
+% that represents current slot and current index, and outputs a list of
+% [InitialIndex, Length]
+analyze_row([],[],_, []).
+analyze_row([], Slot, ColumnNumber, [[Index, SlotLength]]) :-
+    length(Slot, SlotLength), SlotLength \= 0, Index is ColumnNumber-SlotLength.
+analyze_row(['#'|Row], Slot, ColumnNumber, [[Index, SlotLength]|RowData]) :-
+    length(Slot, SlotLength),
+    SlotLength \= 0,
+    Index is ColumnNumber - SlotLength,
+    NextIndex is ColumnNumber+1,
+    analyze_row(Row, [], NextIndex, RowData).
+analyze_row([H|Row], Slot, ColumnNumber, RowData) :-
+    H \= '#',
+    append([H], Slot, NewSlot),
+    NextIndex is ColumnNumber+1,
+    analyze_row(Row, NewSlot, NextIndex, RowData).
+
 % To find words of certain length
 % Predicate should terminate when there is no more words to process
 words_of_certain_length([], _, []).
-words_of_certain_length([Word|WordList], Length, [Word|MatchingWords]) :-
-    length(Word, Length),
-    words_of_certain_length(WordList, Length, MatchingWords).
+words_of_certain_length([Word|_], Length, Word) :-
+    length(Word, Length).
 words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
@@ -103,6 +127,14 @@ replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
     ColumnNumber>=0,
     Index is ColumnNumber-1,
     replace_row(Row, Word, Index, FilledRow).
+
+
+% puzzle_is_correct(FilledPuzzle, WordList) :-
+%     puzzle_is_filled(FilledPuzzle),
+%     words_in_puzzle(FilledPuzzle, WordSet1),
+%     transpose(FilledPuzzle, TransposedPuzzle),
+%     words_in_puzzle(TransposedPuzzle, WordSet2),
+%     append(WordSet1, WordSet2, AllWords),
 
 
 puzzle_is_correct(FilledPuzzle, WordList) :-
