@@ -62,20 +62,44 @@ valid_puzzle([Row|Rows]) :-
 % empty slots filled in with words from WordList.  Puzzle0 and Puzzle
 % should be lists of lists of characters (single-character atoms), one
 % list per puzzle row.  WordList is also a list of lists of
-% characters, one list per word.
-%
-% This code is obviously wrong: it just gives back the unfilled puzzle
-% as result.  You'll need to replace this with a working
-% implementation.
-% solve_puzzle(_,_,FilledPuzzle) :- 
-solve_puzzle(Puzzle, _, Puzzle).
+% characters, one list per word. 
+solve_puzzle(EmptyPuzzle, WordList, FilledPuzzle) :-
+    process_word(WordList, ProcessedWordList), 
+    process_puzzle(EmptyPuzzle, ProcessedWordList, FilledPuzzle). 
+    % puzzle_is_correct(FilledPuzzle, WordList).
 
-process_puzzle([], _, _, []).
-% process_puzzle([EmptyRow|EmptyPuzzle], [Word|WordList], [Word|UsedWords], [FilledRow|FilledPuzzle]) :-
+process_word([],[]).
+process_word([Word|WordList], [[Length, Word] | ProcessedWord]) :-
+    length(Word, Length),
+    process_word(WordList, ProcessedWord).
 
+process_puzzle([], _, []).
+process_puzzle([EmptyRow|EmptyPuzzle], WordList, [FilledRow|FilledPuzzle]) :-
+    analyze_row(EmptyRow, [], 0, RowData),
+    fill_row(RowData, EmptyRow, WordList, [], FilledRow),
+    words_in_row(FilledRow, UsedWords),
+    remove_words(WordList, UsedWords, ProcessedWordList),
+    process_puzzle(EmptyPuzzle, ProcessedWordList, FilledPuzzle).
 
-fill_row([Data|RowData], RowToFill, [Word|WordList], FilledRow) :-
-    replace()
+remove_words(X, [], X).
+remove_words(WordList, [Word|UsedWord], ProcessedWordList) :-
+    length(Word,Length),
+    delete_first_occurence(WordList, [Length,Word], NewWordList),
+    remove_words(NewWordList, UsedWord, ProcessedWordList).
+
+delete_first_occurence([Elem|T], Elem, T).
+delete_first_occurence([H|T], Elem, [H|NewList]) :-
+    delete_first_occurence(T, Elem, NewList).
+
+fill_row([], X, _, _, X).
+% fill_row(_,[],_,[], []).
+fill_row([Data|RowData], RowToFill, WordList, UsedWords, FilledRow) :-
+    [Index, Length] = Data,
+    words_of_certain_length(WordList, Length, Word),
+    \+ memberchk(Word, UsedWords),
+    replace_row(RowToFill, Word, Index, UpdatedRow),
+    append([Word], UsedWords, UpdatedUsedWords),
+    fill_row(RowData, UpdatedRow, WordList, UpdatedUsedWords, FilledRow).
 
 % analyze_row takes in an empty row and initially an empty list and number 0
 % that represents current slot and current index, and outputs a list of
@@ -94,27 +118,19 @@ analyze_row([H|Row], Slot, ColumnNumber, RowData) :-
     append([H], Slot, NewSlot),
     NextIndex is ColumnNumber+1,
     analyze_row(Row, NewSlot, NextIndex, RowData).
+analyze_row([_|Row], Slot, ColumnNumber, RowData) :-
+    NextIndex is ColumnNumber + 1,
+    analyze_row(Row, Slot, NextIndex, RowData).
 
 % To find words of certain length
 % Predicate should terminate when there is no more words to process
 words_of_certain_length([], _, []).
-words_of_certain_length([Word|_], Length, Word) :-
-    length(Word, Length).
+words_of_certain_length([WordData|_], Length, Word) :-
+    [Length, Word] = WordData.
 words_of_certain_length([_|WordList], Length, MatchingWords) :-
     words_of_certain_length(WordList, Length, MatchingWords).
 
-% fill_puzzle takes in the empty puzzle, Row and Column number, the word to 
-% fill and output the filled puzzle
-fill_puzzle([RowToReplace|Puzzle], 0, ColumnNumber, Word, [Replaced|Puzzle]) :-
-    ColumnNumber>=0,
-    replace_row(RowToReplace, Word, ColumnNumber, Replaced).
-fill_puzzle([H|Puzzle], RowNumber, ColumnNumber, Word, [H|FilledPuzzle]) :-
-    RowNumber>=0,
-    ColumnNumber>=0,
-    Index is RowNumber-1,
-    fill_puzzle(Puzzle, Index, ColumnNumber, Word, FilledPuzzle).  
-
-
+% replace_row(EmptyRow, Word, Index, ReplacedRow)
 replace_row([], [], 0, []).
 replace_row([H|Row], [], 0, [H|Row]) :-
     H=='#'.
@@ -134,7 +150,7 @@ replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
 %     words_in_puzzle(FilledPuzzle, WordSet1),
 %     transpose(FilledPuzzle, TransposedPuzzle),
 %     words_in_puzzle(TransposedPuzzle, WordSet2),
-%     append(WordSet1, WordSet2, AllWords),
+%     append(WordSet1, WordSet2, AllWords).
 
 
 puzzle_is_correct(FilledPuzzle, WordList) :-
@@ -171,7 +187,7 @@ words_in_row(Row, WordsInRow) :-
     delete(Words, [], WordsInRow).
 
 process_words_in_row([], CompleteWord, [CompleteWord]).
-process_words_in_row([#|Row], CompleteWord, [CompleteWord|WordList]) :-
+process_words_in_row(['#'|Row], CompleteWord, [CompleteWord|WordList]) :-
     process_words_in_row(Row, [], WordList).
 process_words_in_row([H|Row], Word, WordList) :-
     append(Word, [H], AppendedWord),
