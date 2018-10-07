@@ -1,8 +1,10 @@
 % You can use this code to get started with your fillin puzzle solver.
 % Make sure you replace this comment with your own documentation.
 :- ensure_loaded(library(clpfd)).
+% :- use_module(library(clpfd), []).
 
 main(PuzzleFile, WordlistFile, SolutionFile) :-
+    ensure_loaded(library(clpfd)),
     read_file(PuzzleFile, Puzzle),
     read_file(WordlistFile, Wordlist),
     valid_puzzle(Puzzle),
@@ -65,21 +67,25 @@ valid_puzzle([Row|Rows]) :-
 % characters, one list per word. 
 solve_puzzle(EmptyPuzzle, WordList, FilledPuzzle) :-
     process_word(WordList, ProcessedWordList), 
-    process_puzzle(EmptyPuzzle, ProcessedWordList, FilledPuzzle). 
-    % puzzle_is_correct(FilledPuzzle, WordList).
+    sort(ProcessedWordList, SortedWordList),
+    process_puzzle(EmptyPuzzle, ProcessedWordList, ProcessedPuzzle, RemainingWords), 
+    clpfd:transpose(ProcessedPuzzle, TransposedPuzzle),
+    process_puzzle(TransposedPuzzle, RemainingWords, TransposedPuzzle, EmptyWordList),
+    EmptyWordList == [],
+    clpfd:transpose(TransposedPuzzle, FilledPuzzle).
 
 process_word([],[]).
 process_word([Word|WordList], [[Length, Word] | ProcessedWord]) :-
     length(Word, Length),
     process_word(WordList, ProcessedWord).
 
-process_puzzle([], _, []).
-process_puzzle([EmptyRow|EmptyPuzzle], WordList, [FilledRow|FilledPuzzle]) :-
+process_puzzle([], X, [], X).
+process_puzzle([EmptyRow|EmptyPuzzle], WordList, [FilledRow|FilledPuzzle], RemainingWords) :-
     analyze_row(EmptyRow, [], 0, RowData),
     fill_row(RowData, EmptyRow, WordList, [], FilledRow),
     words_in_row(FilledRow, UsedWords),
     remove_words(WordList, UsedWords, ProcessedWordList),
-    process_puzzle(EmptyPuzzle, ProcessedWordList, FilledPuzzle).
+    process_puzzle(EmptyPuzzle, ProcessedWordList, FilledPuzzle, RemainingWords).
 
 remove_words(X, [], X).
 remove_words(WordList, [Word|UsedWord], ProcessedWordList) :-
@@ -152,11 +158,11 @@ replace_row([H|Row], Word, ColumnNumber, [H|FilledRow]) :-
 %     words_in_puzzle(TransposedPuzzle, WordSet2),
 %     append(WordSet1, WordSet2, AllWords).
 
-
+/*
 puzzle_is_correct(FilledPuzzle, WordList) :-
     puzzle_is_filled(FilledPuzzle),
     words_not_in_puzzle(FilledPuzzle, WordList, RemainingWords),
-    transpose(FilledPuzzle, TransposedPuzzle),
+    clpfd:transpose(FilledPuzzle, TransposedPuzzle),
     words_not_in_puzzle(TransposedPuzzle, RemainingWords, ProcessedRemainingWords),
     ProcessedRemainingWords==[].
 
@@ -181,7 +187,7 @@ words_in_puzzle([Row|FilledPuzzle], SortedAllWords) :-
     words_in_puzzle(FilledPuzzle, WordsInPuzzle),
     append(WordsInRow, WordsInPuzzle, AllWords),
     sort(AllWords, SortedAllWords).
-
+*/
 words_in_row(Row, WordsInRow) :-
     process_words_in_row(Row, [], Words),
     delete(Words, [], WordsInRow).
@@ -189,12 +195,17 @@ words_in_row(Row, WordsInRow) :-
 process_words_in_row([], CompleteWord, [CompleteWord]).
 process_words_in_row(['#'|Row], CompleteWord, [CompleteWord|WordList]) :-
     process_words_in_row(Row, [], WordList).
-process_words_in_row([H|Row], Word, WordList) :-
+process_words_in_row([H|Row], Word, CleanedWordList) :-
     append(Word, [H], AppendedWord),
-    process_words_in_row(Row, AppendedWord, WordList).
-    
-% unique_length_word(WordList, Length, Word) :-
-%     words_of_certain_length(WordList, Length, [Word]),
-%     length(Word, Length).
-% unique_length_word(WordList, Length, Word) :-
-%     unique_length_word(WordList, Length+1, Word).
+    process_words_in_row(Row, AppendedWord, WordList),
+    remove_wrong_words(WordList, CleanedWordList).
+
+
+remove_wrong_words([],[]).
+remove_wrong_words([W|Words], [W|RemovedWords]) :-
+    length(W, Length),
+    Length > 1,
+    \+ memberchk('#', W),
+    remove_wrong_words(Words, RemovedWords).
+remove_wrong_words([_|Words], RemovedWords) :- remove_wrong_words(Words, RemovedWords).
+
