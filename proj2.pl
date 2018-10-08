@@ -71,7 +71,6 @@ process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|Processed
     find_data_of_length(WordLength, Locations, MatchingLocations),
     find_data_of_length(WordLength, TransposedLocations, TransposedMatchingLocations),
     possible_puzzle(PuzzleToFill, MatchingLocations, TransposedMatchingLocations, Words, PossiblePuzzle),
-    print_puzzle("./test", PossiblePuzzle),
     process_puzzle(PossiblePuzzle, Locations, TransposedLocations, ProcessedWordList, FilledPuzzle).
 
 % outputting possible puzzles from a set of locations and possible words
@@ -79,20 +78,23 @@ possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, PossiblePuzz
     permutation(Words, WordsPermutation),
     fill_puzzle(EmptyPuzzle, Locations, WordsPermutation, RemainingWords, FilledPuzzle),
     clpfd:transpose(FilledPuzzle, TransposedPuzzle),
-    permutation(RemainingWords, RemainingWordsPermutation),
-    fill_puzzle(TransposedPuzzle, TransposedLocations, RemainingWordsPermutation, UnusedWords, FilledTransposedPuzzle),
+    fill_puzzle(TransposedPuzzle, TransposedLocations, RemainingWords, UnusedWords, FilledTransposedPuzzle),
     UnusedWords == [],
     clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
+
+
 
 fill_puzzle(X,[],Y,Y,X).
 fill_puzzle(EmptyPuzzle, [Location|Locations], [Word|Words], UnusedWords, ReplacedPuzzle) :-
     [RowNumber, ColumnNumber] = Location,
     RowNumber >= 0,
-    (fill_word(EmptyPuzzle, RowNumber, ColumnNumber, Word, FilledPuzzle)
-    -> fill_puzzle(FilledPuzzle, Locations, Words, UnusedWords, ReplacedPuzzle)
-    ;  append(Words,[Word], NewWordList),
-       fill_puzzle(EmptyPuzzle, [Location|Locations], NewWordList, UnusedWords, ReplacedPuzzle)
-    ).
+    fill_word(EmptyPuzzle, RowNumber, ColumnNumber, Word, FilledPuzzle),
+    fill_puzzle(FilledPuzzle, Locations, Words, UnusedWords, ReplacedPuzzle).
+    % (fill_word(EmptyPuzzle, RowNumber, ColumnNumber, Word, FilledPuzzle)
+    % -> fill_puzzle(FilledPuzzle, Locations, Words, UnusedWords, ReplacedPuzzle)
+    % ;  append(Words,[Word], NewWordList),
+    %    fill_puzzle(EmptyPuzzle, [Location|Locations], NewWordList, UnusedWords, ReplacedPuzzle)
+    % ).
 % process puzzle data into a list of [[Amount, Length, [[RowNumber, ColumnNumber]]]
 process_empty_puzzle(EmptyPuzzle, GroupedPuzzleData) :-
     puzzle_data(EmptyPuzzle, 0, [], PuzzleData),
