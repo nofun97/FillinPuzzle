@@ -65,23 +65,94 @@ solve_puzzle(EmptyPuzzle, WordList, FilledPuzzle) :-
     process_word(WordList, ProcessedWordData),
     process_puzzle(EmptyPuzzle, ProcessedEmptyPuzzle, ProcessedTransposedPuzzle, ProcessedWordData, FilledPuzzle).
 
+
+
 process_puzzle(X,_,_,[],X).
 process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|ProcessedWordList], FilledPuzzle) :-
     [_, WordLength, Words]=WordData,
     find_data_of_length(WordLength, Locations, MatchingLocations),
     find_data_of_length(WordLength, TransposedLocations, TransposedMatchingLocations),
     possible_puzzle(PuzzleToFill, MatchingLocations, TransposedMatchingLocations, Words, PossiblePuzzle),
+    print_puzzle("./test", PossiblePuzzle),
     process_puzzle(PossiblePuzzle, Locations, TransposedLocations, ProcessedWordList, FilledPuzzle).
 
 % outputting possible puzzles from a set of locations and possible words
 possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
-    permutation(Words, WordsPermutation),
-    fill_puzzle(EmptyPuzzle, Locations, WordsPermutation, RemainingWords, FilledPuzzle),
-    clpfd:transpose(FilledPuzzle, TransposedPuzzle),
-    fill_puzzle(TransposedPuzzle, TransposedLocations, RemainingWords, UnusedWords, FilledTransposedPuzzle),
-    UnusedWords == [],
-    clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
+    processing_fixed_locations(EmptyPuzzle, Locations, TransposedLocations, Words, NonFixedWords, ReducedLocations, ReducedTransposedLocations, UpdatedPuzzle),
+    (NonFixedWords == []
+    -> UpdatedPuzzle=PossiblePuzzle
+    ; permutation(NonFixedWords, WordsPermutation),
+      fill_puzzle(UpdatedPuzzle, ReducedLocations, WordsPermutation, RemainingWords, FilledPuzzle),
+      clpfd:transpose(FilledPuzzle, TransposedPuzzle),
+      fill_puzzle(TransposedPuzzle, ReducedTransposedLocations, RemainingWords, UnusedWords, FilledTransposedPuzzle),
+      UnusedWords == [],
+      clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle)
+    ).
+    
 
+processing_fixed_locations(EmptyPuzzle, Locations, TransposedLocations, Words, RemainingWords, ReducedLocations, ReducedTransposedLocation, FixedPuzzle) :-
+    find_filled_locations(EmptyPuzzle, Locations, FixedLocations),
+    clpfd:transpose(EmptyPuzzle, TransposedPuzzle),
+    find_filled_locations(TransposedPuzzle ,TransposedLocations, FixedTransposedLocation),
+    filling_fixed_words(EmptyPuzzle, FixedLocations, FixedTransposedLocation, Words, RemainingWords, ReducedLocations, ReducedTransposedLocation, FixedPuzzle).
+
+filling_fixed_words(Puzzle, Locations, TransposedLocations, Words, RemainingWords, ReducedLocations, ReducedTransposedLocation, UpdatedPuzzle) :-
+    placing_fixed_words(Puzzle, Locations, ReducedLocations, Words, UpdatedWordList, FilledPuzzle),
+    clpfd:transpose(FilledPuzzle, TransposedPuzzle),
+    placing_fixed_words(TransposedPuzzle, TransposedLocations, ReducedTransposedLocation, UpdatedWordList, RemainingWords, ProcessedPuzzle),
+    clpfd:transpose(ProcessedPuzzle, UpdatedPuzzle).
+
+find_filled_locations(_,[],[]).
+find_filled_locations(Puzzle, [Location|Locations], [Location|FilledLocation]) :-
+    [Row, Column] = Location,
+    location_is_filled(Puzzle, Row, Column), 
+    find_filled_locations(Puzzle, Locations, FilledLocation).
+find_filled_locations(Puzzle, [_|Locations], FilledLocation) :- find_filled_locations(Puzzle, Locations, FilledLocation).
+
+% TODO problem with backtracing
+placing_fixed_words(X,[],[],Y,Y,X).
+placing_fixed_words(PuzzleToFill, [Location|Locations], UnusedLocations, Words, UnusedWords, ReplacedPuzzle) :-
+    [RowNumber, ColumnNumber] = Location,
+    try_word(PuzzleToFill, RowNumber,ColumnNumber, Words, MatchingWord),
+    fill_word(PuzzleToFill, RowNumber, ColumnNumber, MatchingWord, UpdatedPuzzle),
+    delete(Words, MatchingWord, UpdatedWordList),
+    placing_fixed_words(UpdatedPuzzle, Locations, UnusedLocations, UpdatedWordList, UnusedWords, ReplacedPuzzle).
+placing_fixed_words(PuzzleToFill, [Location|Locations], [Location|UnusedLocations], Words, UnusedWords, ReplacedPuzzle) :-
+    placing_fixed_words(PuzzleToFill, Locations, UnusedLocations, Words, UnusedWords, ReplacedPuzzle).
+
+location_is_filled([Row|_], 0, Column) :-
+    slot_is_filled(Row, Column).
+location_is_filled([_|Puzzle], Row, Column) :-
+    NextRow is Row-1,
+    NextRow >= 0,
+    location_is_filled(Puzzle, NextRow, Column).
+
+slot_is_filled([Character|_], 0) :-
+    Character \= '_',
+    Character \= '#'.
+slot_is_filled([Character|Slot], 0) :-
+    Character \= '#',
+    slot_is_filled(Slot, 0).
+slot_is_filled([_|Slot], Index) :-
+    NextIndex is Index - 1,
+    NextIndex >= 0,
+    slot_is_filled(Slot, NextIndex).
+
+
+try_word(Puzzle, Row, Column, Words, Word) :-
+    fetch_row(Puzzle, Row, RowToFill),
+    find_matching_word(RowToFill, Column, Words, Word).
+
+find_matching_word(Row, ColumnNumber, [Word|_], Word) :-
+    replace_row(Row, Word, ColumnNumber, _).
+find_matching_word(Row, ColumnNumber, [_|Words], Word) :-
+    find_matching_word(Row, ColumnNumber, Words, Word).
+
+fetch_row([Row|_], 0, Row).
+fetch_row([_|Puzzle], RowNumber, Row) :-
+    NextRow is RowNumber-1,
+    NextRow >= 0,
+    fetch_row(Puzzle, NextRow, Row).
 
 
 fill_puzzle(X,[],Y,Y,X).
@@ -139,8 +210,10 @@ puzzle_data([Row|EmptyPuzzle], RowNumber, DataToAppend, PuzzleData) :-
 
 analyze_row([],[],_, _,[]).
 analyze_row([], Slot, ColumnNumber, RowNumber, [[SlotLength, [RowNumber, Index]]]) :-
+    \+ memberchk('#', Slot),
     length(Slot, SlotLength), SlotLength \= 0, Index is ColumnNumber-SlotLength.
 analyze_row(['#'|Row], Slot, ColumnNumber, RowNumber, [[SlotLength, [RowNumber, Index]]|RowData]) :-
+    \+ memberchk('#', Slot),
     length(Slot, SlotLength),
     SlotLength \= 0,
     Index is ColumnNumber - SlotLength,
@@ -148,10 +221,12 @@ analyze_row(['#'|Row], Slot, ColumnNumber, RowNumber, [[SlotLength, [RowNumber, 
     analyze_row(Row, [], NextIndex, RowNumber, RowData).
 analyze_row([H|Row], Slot, ColumnNumber, RowNumber, RowData) :-
     H \= '#',
+    \+ memberchk('#', Slot),
     append([H], Slot, NewSlot),
     NextIndex is ColumnNumber+1,
     analyze_row(Row, NewSlot, NextIndex, RowNumber, RowData).
 analyze_row([_|Row], Slot, ColumnNumber, RowNumber, RowData) :-
+    \+ memberchk('#', Slot),
     NextIndex is ColumnNumber + 1,
     analyze_row(Row, Slot, NextIndex,RowNumber, RowData).
 
