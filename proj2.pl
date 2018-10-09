@@ -66,41 +66,59 @@ solve_puzzle(EmptyPuzzle, WordList, FilledPuzzle) :-
     process_puzzle(EmptyPuzzle, ProcessedEmptyPuzzle, ProcessedTransposedPuzzle, ProcessedWordData, FilledPuzzle).
 
 process_puzzle(X,_,_,[],X).
-% process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|ProcessedWordList], FilledPuzzle) :-
-%     [_, WordLength, Words]=WordData,
-%     find_data_of_length(WordLength, Locations, MatchingLocations),
-%     find_data_of_length(WordLength, TransposedLocations, TransposedMatchingLocations),
-%     possible_puzzle(PuzzleToFill, MatchingLocations, TransposedMatchingLocations, Words, PossiblePuzzle),
-%     % print_puzzle("./test", PossiblePuzzle),
-%     process_puzzle(PossiblePuzzle, Locations, TransposedLocations, ProcessedWordList, FilledPuzzle).
-process_puzzle(PuzzleToFill, Locations, TransposedLocations,
-     [WordData|ProcessedWordList], FilledPuzzle) :-
+process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|ProcessedWordList], FilledPuzzle) :-
     [_, WordLength, Words]=WordData,
     find_data_of_length(WordLength, Locations, MatchingLocations),
-    find_data_of_length(WordLength, TransposedLocations,
-         TransposedMatchingLocations),
-    processing_fixed_locations(PuzzleToFill, MatchingLocations, 
-        TransposedMatchingLocations, Words, RemainingWords, ReducedLocations, 
-        ReducedTransposedLocations, PossibleFixedPuzzle),
-    possible_puzzle(PossibleFixedPuzzle, ReducedLocations, 
-        ReducedTransposedLocations, RemainingWords, PossiblePuzzle),
+    find_data_of_length(WordLength, TransposedLocations, TransposedMatchingLocations),
+    possible_puzzle(PuzzleToFill, MatchingLocations, TransposedMatchingLocations, Words, PossiblePuzzle),
     % print_puzzle("./test", PossiblePuzzle),
-    process_puzzle(PossiblePuzzle, Locations, TransposedLocations, 
-        ProcessedWordList, FilledPuzzle).
+    process_puzzle(PossiblePuzzle, Locations, TransposedLocations, ProcessedWordList, FilledPuzzle).
+% process_puzzle(PuzzleToFill, Locations, TransposedLocations,
+%      [WordData|ProcessedWordList], FilledPuzzle) :-
+%     [_, WordLength, Words]=WordData,
+%     find_data_of_length(WordLength, Locations, MatchingLocations),
+%     find_data_of_length(WordLength, TransposedLocations,
+%          TransposedMatchingLocations),
+%     processing_fixed_locations(PuzzleToFill, MatchingLocations, 
+%         TransposedMatchingLocations, Words, RemainingWords, ReducedLocations, 
+%         ReducedTransposedLocations, PossibleFixedPuzzle),
+%     possible_puzzle(PossibleFixedPuzzle, ReducedLocations, 
+%         ReducedTransposedLocations, RemainingWords, PossiblePuzzle),
+%     % print_puzzle("./test", PossiblePuzzle),
+%     process_puzzle(PossiblePuzzle, Locations, TransposedLocations, 
+%         ProcessedWordList, FilledPuzzle).
 
 % outputting possible puzzles from a set of locations and possible words
-possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
-    % processing_fixed_locations(EmptyPuzzle, Locations, TransposedLocations, Words, NonFixedWords, ReducedLocations, ReducedTransposedLocations, UpdatedPuzzle),
-    % permutation(NonFixedWords, WordsPermutation),
-    clpfd:transpose()
-    find_filled_locations(Puzzle, Locations, FixedLocations, ReducedLocations),
+% possible_puzzle(Puzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
+%     find_filled_locations(Puzzle, Locations, FixedLocations, ReducedLocations),
+%     placing_fixed_words(Puzzle, FixedLocations, Words, ReducedWords1, UpdatedPuzzle1),
+%     permutation(ReducedWords1, WordsPermutation),
+%     fill_puzzle(UpdatedPuzzle1, ReducedLocations, WordsPermutation, ReducedWords2, UpdatedPuzzle2),
+%     clpfd:transpose(UpdatedPuzzle2, TransposedPuzzle),
+%     find_filled_locations(TransposedPuzzle, TransposedLocations, FixedTransposedLocations, ReducedTransposedLocations),
+%     placing_fixed_words(TransposedPuzzle, FixedTransposedLocations, ReducedWords2, ReducedWords3, UpdatedTransposedPuzzle),
+%     fill_puzzle(UpdatedTransposedPuzzle, ReducedTransposedLocations, ReducedWords3, [], FilledTransposedPuzzle),
+%     clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
+
+% possible_puzzle(Puzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
+%     permutation(Words, WordsPermutation),
+%     fill_puzzle(Puzzle, Locations, WordsPermutation, ReducedWords1, UpdatedPuzzle1),
+%     clpfd:transpose(UpdatedPuzzle1, TransposedPuzzle),
+%     find_filled_locations(TransposedPuzzle, TransposedLocations, FixedTransposedLocations, ReducedTransposedLocations),
+%     placing_fixed_words(TransposedPuzzle, FixedTransposedLocations, ReducedWords1, ReducedWords2, UpdatedTransposedPuzzle),
+%     fill_puzzle(UpdatedTransposedPuzzle, ReducedTransposedLocations, ReducedWords2, [], FilledTransposedPuzzle),
+%     clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
+  
+possible_puzzle(Puzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
     permutation(Words, WordsPermutation),
-    fill_puzzle(EmptyPuzzle, Locations, WordsPermutation, RemainingWords, FilledPuzzle),
-    clpfd:transpose(FilledPuzzle, TransposedPuzzle),
-    fill_puzzle(TransposedPuzzle, TransposedLocations, RemainingWords, UnusedWords, FilledTransposedPuzzle),
-    UnusedWords == [],
+    fill_puzzle(Puzzle, Locations, WordsPermutation, ReducedWords, UpdatedPuzzle),
+    clpfd:transpose(UpdatedPuzzle, TransposedPuzzle),
+    fill_puzzle(TransposedPuzzle, TransposedLocations, ReducedWords, [], FilledTransposedPuzzle),
     clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
+
+% possible_puzzle(Puzzle, Locations, TransposedLocations, Words, PossiblePuzzle).
     
+
 processing_fixed_locations(Puzzle, Locations, TransposedLocations, Words, RemainingWords, ReducedLocations, ReducedTransposedLocations, FixedPuzzle) :-
     find_filled_locations(Puzzle, Locations, FixedLocations, ReducedLocations),
     placing_fixed_words(Puzzle, FixedLocations, Words, ProcessedWords, UpdatedPuzzle),
@@ -145,6 +163,15 @@ placing_fixed_words(PuzzleToFill, [Location|Locations], Words, UnusedWords, Repl
     delete(Words, MatchingWord, UpdatedWordList),
     placing_fixed_words(UpdatedPuzzle, Locations, UpdatedWordList, UnusedWords, ReplacedPuzzle).
 
+try_word([EmptyRow|Puzzle], 0, Column, [Word|_], Word, [ReplacedRow|Puzzle]) :-
+    replace_row(EmptyRow, Word, Column, ReplacedRow).
+try_word(Puzzle, 0, Column, [_|Words], Word, UpdatedPuzzle) :-
+    try_word(Puzzle, 0, Column, Words, Word, UpdatedPuzzle).
+try_word([Row|Puzzle], Row, Column, Words, Word, [Row|UpdatedPuzzle]) :-
+    NextRow is Row-1,
+    NextRow >= 0,
+    try_word(Puzzle, NextRow, Column, Words, Word, UpdatedPuzzle).
+
 find_filled_locations(_,[],[],[]).
 find_filled_locations(Puzzle, [Location|Locations], [Location|FilledLocation], NonFixedLocations) :-
     [Row, Column] = Location,
@@ -171,16 +198,6 @@ slot_is_filled([_|Slot], Index) :-
     NextIndex is Index - 1,
     NextIndex >= 0,
     slot_is_filled(Slot, NextIndex).
-
-
-try_word([EmptyRow|Puzzle], 0, Column, [Word|_], Word, [ReplacedRow|Puzzle]) :-
-    replace_row(EmptyRow, Word, Column, ReplacedRow).
-try_word(Puzzle, 0, Column, [_|Words], Word, UpdatedPuzzle) :-
-    try_word(Puzzle, 0, Column, Words, Word, UpdatedPuzzle).
-try_word([Row|Puzzle], Row, Column, Words, Word, [Row|UpdatedPuzzle]) :-
-    NextRow is Row-1,
-    NextRow >= 0,
-    try_word(Puzzle, NextRow, Column, Words, Word, UpdatedPuzzle).
 
 find_matching_word(Row, ColumnNumber, [Word|_], Word) :-
     replace_row(Row, Word, ColumnNumber, _).
@@ -271,7 +288,7 @@ process_word(WordList, SortedProcessedWordList) :-
     [H|SortedWordList] \= [],
     [Length, Word] = H,
     group_data(SortedWordList, 1, [Word], Length, ProcessedWordList),
-    quicksort_word_data(ProcessedWordList, SortedProcessedWordList).
+   sort(ProcessedWordList, SortedProcessedWordList).
 
 quicksort_word_data([],[]).
 quicksort_word_data([X|Xs],Ys) :-
