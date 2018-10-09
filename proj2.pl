@@ -21,14 +21,20 @@
  */
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 
-    % reading the necessary files
+    /**
+     * reading the necessary files
+     */
     read_file(PuzzleFile, Puzzle),
     read_file(WordlistFile, Wordlist),
 
-    % check puzzle validity
+    /**
+     * check puzzle validity
+     */
     valid_puzzle(Puzzle),
 
-    % solving the puzzle and print the output
+    /**
+     * solving the puzzle and print the output
+     */
     solve_puzzle(Puzzle, Wordlist, Solved),
     print_puzzle(SolutionFile, Solved).
 
@@ -117,38 +123,48 @@ valid_puzzle([Row|Rows]) :-
 /*****************************************************************************/
 
 /**
- * solving the puzzle
+ * solve_puzzle takes in the empty puzzle, the list of words and outputs the
+ * correctly filled puzzle
  */
 solve_puzzle(EmptyPuzzle, WordList, FilledPuzzle) :-
-    % processing the empty puzzle and transposed empty puzzle to a list of
-    % grouped locations based on length
+    /**
+     * processing the empty puzzle and transposed empty puzzle to a list of
+     * grouped locations based on length
+     */
     process_empty_puzzle(EmptyPuzzle, ProcessedEmptyPuzzle),
     clpfd:transpose(EmptyPuzzle, TransposedPuzzle),
     process_empty_puzzle(TransposedPuzzle, ProcessedTransposedPuzzle),
 
-    % process the words into a list of group words based on length
+    /**
+     * process the words into a list of group words based on length
+     */
     process_word(WordList, ProcessedWordData),
 
-    % process the puzzle
+    /**
+     * process the puzzle
+     */
     process_puzzle(EmptyPuzzle, ProcessedEmptyPuzzle, ProcessedTransposedPuzzle
         , ProcessedWordData, FilledPuzzle).
 
 /*****************************************************************************/
 
 /**
- * process_puzzle(CompletePuzzle, Locations, TransposedLocation, 
- *    CompletePuzzle) takes in an empty puzzle, list of locations both from 
- * normal puzzle and transposed puzzle, list of processed word list, and 
- * output the complete puzzle
+ * process_puzzle takes in an empty puzzle, list of locations both from normal
+ * puzzle and transposed puzzle, list of processed word list, and output the 
+ * complete puzzle
  */
 
-% predicate terminates when all locations are filled
+/**
+ * predicate terminates when all locations are filled
+ */
 process_puzzle(CompletePuzzle,_,_,[],CompletePuzzle).
 
 process_puzzle(PuzzleToFill, Locations, TransposedLocations, 
     [WordData|ProcessedWordList], FilledPuzzle) :-
 
-    % unpacking the processed data of wordlist
+    /**
+     * unpacking the processed data of wordlist
+     */
     [_, WordLength, Words]=WordData,
     
     /**
@@ -182,11 +198,15 @@ process_puzzle(PuzzleToFill, Locations, TransposedLocations,
 possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, 
     PossiblePuzzle) :-
     
-    % calculating the length of each locations
+    /**
+     * calculating the length of each locations
+     */
     length(Locations, Amount1),
     length(TransposedLocations, Amount2),
 
-    % prioritized to process locations with less locations
+    /**
+     * prioritized to process locations with less locations
+     */
     (Amount1 =< Amount2
 
        /**
@@ -644,4 +664,5 @@ combination(N,[Data|Datas],[Data|Combination]) :-
 combination(N,[_|Datas],Combination) :-
     N>0,
     combination(N,Datas,Combination).
+
 /*****************************************************************************/
