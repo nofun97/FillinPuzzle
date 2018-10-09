@@ -71,7 +71,7 @@ process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|Processed
     find_data_of_length(WordLength, Locations, MatchingLocations),
     find_data_of_length(WordLength, TransposedLocations, TransposedMatchingLocations),
     possible_puzzle(PuzzleToFill, MatchingLocations, TransposedMatchingLocations, Words, PossiblePuzzle),
-    % print_puzzle("./test", PossiblePuzzle),
+    print_puzzle("./test", PossiblePuzzle),
     process_puzzle(PossiblePuzzle, Locations, TransposedLocations, ProcessedWordList, FilledPuzzle).
 % process_puzzle(PuzzleToFill, Locations, TransposedLocations,
 %      [WordData|ProcessedWordList], FilledPuzzle) :-
@@ -101,17 +101,39 @@ process_puzzle(PuzzleToFill, Locations, TransposedLocations, [WordData|Processed
 %     UnusedWords == [],
 %     clpfd:transpose(FilledTransposedPuzzle, PossiblePuzzle).
 
+% possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
+%     find_filled_locations(EmptyPuzzle, Locations, FilledLocations, NonFixedLocations),
+%     append(NonFixedLocations,FilledLocations,  NewLocations),
+%     clpfd:transpose(EmptyPuzzle, TransposedEmptyPuzzle),
+%     find_filled_locations(TransposedEmptyPuzzle, TransposedLocations, TransposedFilledLocations, TransposedNonFixedLocations),
+%     append(TransposedNonFixedLocations,TransposedFilledLocations,  NewTransposedLocations),
+%     length(Locations, Amount1),
+%     length(TransposedLocations, Amount2),
+%     (Amount1 =< Amount2
+%     -> combination(Amount1, Words, WordsCombination),
+%        all_words_matched(EmptyPuzzle, WordsCombination, NewLocations, UpdatedPuzzle),
+%        subtract(Words, WordsCombination, RemainingWords),
+%        clpfd:transpose(UpdatedPuzzle, TransposedPuzzle),
+%        all_words_matched(TransposedPuzzle, RemainingWords, NewTransposedLocations, UpdatedTransposedPuzzle),
+%        clpdf:transpose(UpdatedTransposedPuzzle, PossiblePuzzle)
+%     ;  combination(Amount2, Words, WordsCombination),
+%        clpfd:transpose(EmptyPuzzle, TransposedPuzzle),
+%        all_words_matched(TransposedPuzzle, WordsCombination, NewTransposedLocations, UpdatedPuzzle),
+%        subtract(Words, WordsCombination, RemainingWords),
+%        clpfd:transpose(UpdatedPuzzle, NormalFilledPuzzle),
+%        all_words_matched(NormalFilledPuzzle, RemainingWords, NewLocations, PossiblePuzzle)
+%     ).
+
+
+% WORKING
 possible_puzzle(EmptyPuzzle, Locations, TransposedLocations, Words, PossiblePuzzle) :-
     length(Locations, Amount1),
     length(TransposedLocations, Amount2),
     (Amount1 =< Amount2
     -> combination(Amount1, Words, WordsCombination),
-       find_filled_locations(EmptyPuzzle, Locations, FilledLocation, NonFixedLocations),
-       append(FilledLocation, NonFixedLocations, NewLocations),
-       all_words_matched(EmptyPuzzle, WordsCombination, NewLocations, UpdatedPuzzle),
+       all_words_matched(EmptyPuzzle, WordsCombination, Locations, UpdatedPuzzle),
        subtract(Words, WordsCombination, RemainingWords),
        clpfd:transpose(UpdatedPuzzle, TransposedPuzzle),
-       find_filled_locations(EmptyPuzzle, Locations, FilledLocation, NonFixedLocations),
        all_words_matched(TransposedPuzzle, RemainingWords, TransposedLocations, UpdatedTransposedPuzzle),
        clpdf:transpose(UpdatedTransposedPuzzle, PossiblePuzzle)
     ;  combination(Amount2, Words, WordsCombination),
@@ -180,6 +202,7 @@ try_word(Puzzle, [0, ColumnNumber], [_|Words], MatchingWord, UpdatedPuzzle) :-
 try_word([Row|Puzzle], Location, Words, MatchingWord, [Row|UpdatedPuzzle]) :-
     [RowNumber, ColumnNumber]=Location,
     NextRow is RowNumber-1,
+    NextRow >= 0,
     try_word(Puzzle, [NextRow,ColumnNumber], Words, MatchingWord, UpdatedPuzzle).
 
 processing_fixed_locations(Puzzle, Locations, TransposedLocations, Words, RemainingWords, ReducedLocations, ReducedTransposedLocations, FixedPuzzle) :-
